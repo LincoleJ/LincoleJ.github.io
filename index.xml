@@ -6,7 +6,17 @@
     <description>Recent content on Lincole Jiang</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Thu, 23 Jul 2015 21:13:14 -0500</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Sun, 09 May 2021 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>How Python &amp; R Communicates</title>
+      <link>/post/2021/05/09/how-python-r-communicates/</link>
+      <pubDate>Sun, 09 May 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/post/2021/05/09/how-python-r-communicates/</guid>
+      <description>This is a post about how R and Python communicates! First, I’ll just try something in python to see if it really works. Below just shows a simple function that displays # of days it has been since 12 a.m. 1/1/1970 GMT.
+# Import the dataset import time total_seconds = time.time() print(&amp;#39;seconds since 12:00 am, 1/1/1970 GMT = &amp;#39;, total_seconds) ## seconds since 12:00 am, 1/1/1970 GMT = 1620639439.6569784 Now, to test out whether ‘reticulate’ really works to let R and python “talk” to one another, I’ll have R print out the number of days it has been using the result we’ve got from python shown above.</description>
+    </item>
+    
     <item>
       <title>Hello R Markdown</title>
       <link>/post/2015/07/23/hello-r-markdown/</link>

@@ -1,0 +1,34 @@
+---
+title: How Python & R Communicates
+author: Lincole J
+date: '2021-05-09'
+slug: how-python-r-communicates
+categories: []
+tags: []
+description: ''
+---
+
+## This is a post about how R and Python communicates!
+
+First, I'll just try something in python to see if it really works. Below just shows a simple function that displays # of days it has been since 12 a.m. 1/1/1970 GMT.
+
+```{python}
+# Import the dataset
+import time
+total_seconds = time.time()
+print('seconds since 12:00 am, 1/1/1970 GMT = ', total_seconds)
+```
+
+Now, to test out whether 'reticulate' really works to let R and python "talk" to one another, I'll have R print out the number of days it has been using the result we've got from python shown above.
+```{R}
+library(reticulate)
+total_days<-py$total_seconds/(60*60*24)
+cat(c("days since 12:00 am, 1/1/1970 GMT = ", total_days))
+```
+
+Reticulation works!
+
+In the spirit of the May 4th, which just passed not a week ago, I'd like to commemorate with a illustration:
+![](/post/2021-05-09-how-python-r-communicates_files/may_fourth.jpeg)
+(original twitter page: https://twitter.com/ourobororoboruo/status/1389470459058655233)
+Of note, May 4th to most ethnic Chinese is perhaps not most important because of its Starwars implications, but rather that it is the memorial day of the May Fourth Movement in 1919, which, by celebrating the two misters--Mr. Democracy and Mr. Science from the West--was the starting point of the democratic, modernization, and nationalistic advancements in contemporary Chinese history--anyhow, may the fourth always be with you.
