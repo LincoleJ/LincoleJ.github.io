@@ -7,7 +7,7 @@
     <meta name="author" content="Lincole Jiang" />
     
     <link rel="shortcut icon" type="image/x-icon" href="../../img/favicon.ico">
-    <title>Project 2</title>
+    <title>Project 2: Predicting Post-Operation Survival Condition for Melanoma Patients</title>
     <meta name="generator" content="Hugo 0.83.1" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="../../css/main.css" />
@@ -54,13 +54,13 @@
       <div class="container">
         <div class="blog-post">
           <h3>
-            <strong><a href="../../project/project2/">Project 2</a></strong>
+            <strong><a href="../../project/project2/">Project 2: Predicting Post-Operation Survival Condition for Melanoma Patients</a></strong>
           </h3>
         </div>
  
 <div class="blog-title">
           <h4>
-         December 1, 2020 
+         January 1, 0001 
             &nbsp;&nbsp;
             
           </h4>
@@ -72,8 +72,479 @@
               
 
 
-<div id="test-project-2" class="section level2">
-<h2>Test Project 2</h2>
+<div id="introduction-the-dataset" class="section level3">
+<h3>0: Introduction &amp; The Dataset</h3>
+<p>Develops in melanocytes–the skin cells that produces melanin–melanoma is the most severe type of skin cancer that kills will kill about 7180 patients in the U.S. in 2021, per American Cancer Society estimates. This project examines the post-ops and recovery situation of patients with malignant melanoma using data from 205 of such patients who received complete tumor removal surgery [together with 2.5 cm of surrounding skin] at the Department of Plastic Surgery in University Hospital of Odense, Denmark from 1962 to 1977. This raw dataset concerns seven variables in total, three of which categorical: ‘status’, which indicates patient status at the end of the study (1=‘died from melanoma’, 2=‘alive’, 3=‘died from causes unrelated to melanoma); ’sex’, which indicates gender of patient (1=‘male’, 0=‘female’); and ‘ulcer’, which indicates the presence of ulceration (1=‘present’, 0=‘absent’). In addition, it also contains four numerical variables: ‘time’, which indicates survival time in days since the operation; ‘age’, which indicates patient age at time of the operation, ‘year’, the year of the operation; and ‘thickness’, the thickness of tumor removed in mm. This project intends to examine the effect of age, year of operation, sex, ulceration, and thickness of tumor on survival time/status post-operation for patients that has underwent tumor-removal surgery, of which ulceration and tumor thickness are known prognostic variables.</p>
+<pre class="r"><code># Acquiring and reading the raw dataset.
+library(tidyverse)
+library(ggplot2)
+tumor &lt;- read_csv(&quot;https://vincentarelbundock.github.io/Rdatasets/csv/MASS/Melanoma.csv&quot;)</code></pre>
+</div>
+<div id="i-do-numerical-variables-differ-across-status" class="section level3">
+<h3>I: Do Numerical Variables Differ Across ‘status’?</h3>
+<p>As stated in the introduction, ‘status’ is an explanatory variable with three groups, of those who died from the tumor, those who lived till at least the end of the study, and those who died of other causes. As such, it ought to be treated as the main focus compared to the other categorical variables, and thus we perform the MANOVA of all numerical variables w.r.t. to it.</p>
+<pre class="r"><code># Run MANOVA for all numerical variables w.r.t. &#39;status&#39;
+man1&lt;-manova(cbind(time,age,year,thickness)~status,data=tumor)
+summary(man1)</code></pre>
+<pre><code>## Df Pillai approx F num Df den Df Pr(&gt;F)
+## status 1 0.22451 14.475 4 200 2.128e-10 ***
+## Residuals 203
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<p>Since overall MANOVA is significant, we further investigate by its significant effect by performing univariate ANOVAs for each numerical variable:</p>
+<pre class="r"><code># Extract Univariate ANOVAs from MANOVA, perform univerate ANOVA.
+summary.aov(man1)</code></pre>
+<pre><code>## Response time :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## status 1 25670731 25670731 22.543 3.878e-06 ***
+## Residuals 203 231169377 1138765
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Response age :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## status 1 14 14.45 0.0517 0.8203
+## Residuals 203 56687 279.24
+##
+## Response year :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## status 1 25.83 25.8335 3.9507 0.0482 *
+## Residuals 203 1327.41 6.5389
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Response thickness :
+## Df Sum Sq Mean Sq F value Pr(&gt;F)
+## status 1 74.88 74.881 8.8801 0.003235 **
+## Residuals 203 1711.80 8.433
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<p>As shown, at least one status differs for all three numerical variables of ‘time’, ‘year’, and ‘thickness’. As such, I now perform post-hoc t tests for all sigificant ANOVAs.</p>
+<pre class="r"><code># Post-hoc t tests for all significant numericals
+pairwise.t.test(tumor$time,tumor$status,p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  tumor$time and tumor$status 
+## 
+##   1       2      
+## 2 &lt; 2e-16 -      
+## 3 0.76    1.6e-06
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(tumor$year,tumor$status,p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  tumor$year and tumor$status 
+## 
+##   1      2     
+## 2 0.0034 -     
+## 3 0.6017 0.2672
+## 
+## P value adjustment method: none</code></pre>
+<pre class="r"><code>pairwise.t.test(tumor$thickness,tumor$status,p.adj=&quot;none&quot;)</code></pre>
+<pre><code>## 
+##  Pairwise comparisons using t tests with pooled SD 
+## 
+## data:  tumor$thickness and tumor$status 
+## 
+##   1       2    
+## 2 6.4e-06 -    
+## 3 0.481   0.064
+## 
+## P value adjustment method: none</code></pre>
+<p>Before summarizing, a quick dig into MANOVA assumptions that shows violation:</p>
+<pre class="r"><code># &#39;thickness&#39; conspicuously violates the normality assumption
+boxplot(tumor$thickness,main=&quot;Distribution of Thickness&quot;)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-5-1.png" width="768" style="display: block; margin: auto;" /></p>
+<p><em>To conclude, I’ve performed 1 MANOVA, 4 ANOVAs, and 9 t-tests, so a total of 14 tests. As such, the probability of at least one type I error=1-.95^14=0.512325. If adopting the Bonferroni adjustment, the new critical level=0.05/14 =0.003571429 for each individual test s.t. the overall critical level is kept at 5%. With this new critical level, ‘time’ differs significantly across groups 1, 2 and between groups 2, 3; ‘year’ differs significantly across groups 1. 2; and ‘thickness’ differs significantly across groups 1, 2. As for the assumptions for MANOVA, it’s pretty clear that it will not be all met: in addition to violating normality for numerical variables like ‘thickness’ (as showed in the box plot above), it is impossible that the numerical variables [e.g., tumor thickness and the number of days the patient lived after surgery] would have equal variances.</em></p>
+</div>
+<div id="ii-does-survival-time-differ-by-ulceration-status" class="section level3">
+<h3>II: Does Survival Time Differ by Ulceration Status?</h3>
+<p>If a patient develops an ulceration, the melanoma tumor invades through the overlying epidermis rather than pushing it upwards and manifests as an absent epidermis overlying the major part of the tumor. As stated previously, it is an important known prognostic variable in predicting survival. Thus, we ask the question: does average survival time differ significantly between patients whose tumor has ulcerated and those that has not?</p>
+<div id="hypotheses" class="section level4">
+<h4>Hypotheses</h4>
+<ul>
+<li>H0: there is no difference in the mean survival time between those who developed ulceration and those who did not.</li>
+<li>HA: there is a difference in the mean survival time between those who developed ulceration and those who did not.</li>
+</ul>
+</div>
+<div id="randomization-test" class="section level4">
+<h4>Randomization Test</h4>
+<pre class="r"><code># Performing the randomization test.
+diffs&lt;-vector()
+library(dplyr)
+for(i in 1:1000){
+time &lt;- tumor%&gt;%mutate(time=sample(tumor$time))
+diffs[i] &lt;- time%&gt;%summarize(mean(time[ulcer==1]) - mean(time[ulcer==0]))%&gt;%pull
+}
+# Mean Diff for sample/original data
+samp_diff&lt;-tumor%&gt;%summarize(mean(tumor$time[ulcer==1])-mean(tumor$time[ulcer==0]))%&gt;%pull
+samp_diff</code></pre>
+<pre><code>## [1] -597.1541</code></pre>
+<pre class="r"><code># p-value
+mean(diffs&lt;samp_diff | diffs&gt;(mean(diffs)-samp_diff))</code></pre>
+<pre><code>## [1] 0</code></pre>
+<pre class="r"><code># A plot of the randomization distribution
+hist(diffs,main=&quot;Mean Diff Survival Time Randomization Distribution&quot;,xlab=&#39;days&#39;,ylab=&#39;frequency&#39;)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-6-1.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="conclusion" class="section level4">
+<h4>Conclusion</h4>
+<p>As shown, since p-value=0&lt;&lt;&lt;0.05, we reject H0 and conclude that there is a significant difference of mean survival days among the patients whose tumor has ulcerated and those that has not.</p>
+</div>
+</div>
+<div id="iii-survival-time-via-tumour-thickness-and-ulceration-status" class="section level3">
+<h3>III: Survival Time Via Tumour Thickness and Ulceration Status</h3>
+<p>As stated, ulceration status and thickness of tumor are the two important known prognostic variables in the survival time/status. The previous two sections has shown that ulceration is a significant predictor in survival time, and now we build a linear regression model to investigate the validity of both such variables as predictors of survival time.</p>
+<pre class="r"><code># Mean-center numeric variable
+tumor$thickness_c&lt;-tumor$thickness-mean(tumor$thickness)
+# Run regression model
+fit1&lt;-lm(time~thickness_c*ulcer,data=tumor)
+summary(fit1)</code></pre>
+<pre><code>##
+## Call:
+## lm(formula = time ~ thickness_c * ulcer, data = tumor)
+##
+## Residuals:
+## Min 1Q Median 3Q Max
+## -2392.4 -771.7 -214.5 718.4 3157.1
+##
+## Coefficients:
+## Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept) 2407.825 112.404 21.421 &lt; 2e-16 ***
+## thickness_c -6.441 46.022 -0.140 0.88883
+## ulcer -467.110 167.239 -2.793 0.00573 **
+## thickness_c:ulcer -80.326 58.068 -1.383 0.16810
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## Residual standard error: 1074 on 201 degrees of freedom
+## Multiple R-squared: 0.09715, Adjusted R-squared: 0.08368
+## F-statistic: 7.21 on 3 and 201 DF, p-value: 0.0001279</code></pre>
+<div id="coefficient-estimates" class="section level4">
+<h4>Coefficient Estimates:</h4>
+<ul>
+<li>Intercept: Predicted days of survival after surgery for a patient with average tumor-thickness and no ulceration is 2407.825 days.</li>
+<li>thickness_c: for patients with no ulceration, for 1mm increase in tumor thickness, survival time is expected to decrease by 6.441 days.</li>
+<li>ulcer: for patients with average thickness of tumor, the survival time of those that developed ulceration is predicted to be 467.110 days less than those who did not.</li>
+<li>‘thickness_c:ulcer’: the slope for thickness on survival time is 80.326 lower for ulcerated compared to non-ulcerated.</li>
+</ul>
+</div>
+<div id="regression-plot" class="section level4">
+<h4>Regression Plot</h4>
+<p>To visualize the linear regression, the plot of survival time (y-axis) via tumor thickness (x-axis) colored or grouped by ulceration status is shown below:</p>
+<pre class="r"><code>tumor %&gt;% select(thickness, ulcer, time) %&gt;% ggplot(aes(thickness,time,color=ulcer)) + geom_point() + geom_smooth(method=&#39;lm&#39;) + geom_vline(xintercept=mean(tumor$thickness),lty=2) + xlab(&quot;thickness (mm)&quot;) + ylab(&quot;time (day)&quot;)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-8-1.png" width="768" style="display: block; margin: auto;" />
+<em>As shown in the model summary, multiple R^2 says that 9.715% of the variations in the outcome are explained by the model; while adjusted-R^2 says that 8368% of the outcome is explained by the model.</em></p>
+</div>
+<div id="normality-linearity-homoskedasticity-assumptions" class="section level4">
+<h4>Normality, Linearity, Homoskedasticity Assumptions</h4>
+<pre class="r"><code># Plot residuals to check linearity
+resids&lt;-fit1$residuals; fitvals&lt;-fit1$fitted.values
+ggplot()+geom_point(aes(fitvals,resids))+geom_hline(yintercept=0, col=&quot;red&quot;)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-9-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code>library(sandwich)
+library(lmtest)
+# Breuch-Pagan test for homoskedasticity
+bptest(fit1)</code></pre>
+<pre><code>## 
+##  studentized Breusch-Pagan test
+## 
+## data:  fit1
+## BP = 2.5825, df = 3, p-value = 0.4606</code></pre>
+<pre class="r"><code># Kolmogorov-Smirnovfor normality
+ks.test(resids, &quot;pnorm&quot;, sd=sd(resids))</code></pre>
+<pre><code>## 
+##  One-sample Kolmogorov-Smirnov test
+## 
+## data:  resids
+## D = 0.086224, p-value = 0.09488
+## alternative hypothesis: two-sided</code></pre>
+<p><em>The residual shows that the linear model does not account very well for this particular data, since the points seems to be clustered to the right and not randomly dispersed. Since p-value for Breusch-Pagan&gt;0.05, we conclude that we fail to reject H0 and that there is no sign of homoskedasticity. Similarly, since p-value&gt;0.05 for one-sample K-P test, we fail to reject H0 and conclude that normality assumption is not violated.</em></p>
+</div>
+<div id="regression-results" class="section level4">
+<h4>Regression Results</h4>
+<pre class="r"><code># Compute using robust SE
+coeftest(fit1,vcov=vcovHC(fit1))</code></pre>
+<pre><code>##
+## t test of coefficients:
+##
+## Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept) 2407.8247 124.0606 19.4085 &lt; 2.2e-16 ***
+## thickness_c -6.4413 54.5030 -0.1182 0.906041
+## ulcer -467.1098 174.9145 -2.6705 0.008194 **
+## thickness_c:ulcer -80.3258 68.2294 -1.1773 0.240472
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code># Compare with original
+coeftest(fit1)</code></pre>
+<pre><code>##
+## t test of coefficients:
+##
+## Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept) 2407.8247 112.4041 21.4211 &lt; 2.2e-16 ***
+## thickness_c -6.4413 46.0220 -0.1400 0.888831
+## ulcer -467.1098 167.2392 -2.7931 0.005726 **
+## thickness_c:ulcer -80.3258 58.0679 -1.3833 0.168105
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<p><em>As shown, the significant results have not changed compared to the previous model without robust SEs. The only predicted significant variable for survival time is ulceration status (p-value&lt;&lt;&lt;0.05 with both models but increased slightly from ~.005 to ~.008 for this model). However, despite not producing change in significant results, the robust SEs across all four categories has increased compared to the original normal-theory SE, and respectively the respective p-values for the four categories has slightly increased.</em></p>
+</div>
+<div id="bootstrapped-se-p-value" class="section level4">
+<h4>Bootstrapped SE &amp; p-value</h4>
+<pre class="r"><code># The previous regression model
+coeftest(fit1)</code></pre>
+<pre><code>##
+## t test of coefficients:
+##
+## Estimate Std. Error t value Pr(&gt;|t|)
+## (Intercept) 2407.8247 112.4041 21.4211 &lt; 2.2e-16 ***
+## thickness_c -6.4413 46.0220 -0.1400 0.888831
+## ulcer -467.1098 167.2392 -2.7931 0.005726 **
+## thickness_c:ulcer -80.3258 58.0679 -1.3833 0.168105
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1</code></pre>
+<pre class="r"><code># Estimate boot SE by resampling observations
+samp_distn&lt;-replicate(5000, {
+    boot_dat&lt;-sample_frac(tumor,replace=T)
+    fit&lt;-lm(time~thickness_c*ulcer,data=boot_dat)
+    coef(fit)
+})
+# Bootstrapped SEs
+samp_distn%&gt;%t%&gt;%as.data.frame%&gt;%summarize_all(sd)</code></pre>
+<pre><code>##   (Intercept) thickness_c    ulcer thickness_c:ulcer
+## 1    126.3917    53.61987 175.1818          67.49409</code></pre>
+<p><em>As shown, the boot SE has increased for all four categories compared to the original normal-theory SE. As such, p-values for the four categories are expected to increase as well.</em></p>
+</div>
+<div id="conclusion-1" class="section level4">
+<h4>Conclusion</h4>
+<p>Per results from employing the different SEs, it is perhaps safe to conclude that, while ulceration is an important predictor of survival time, tumor thickness and the interaction between thickness and ulceration are not for this particular group of patients.</p>
+</div>
+</div>
+<div id="iv-survival-condition-via-sex-and-ulceration" class="section level3">
+<h3>IV: Survival Condition Via Sex and Ulceration</h3>
+<pre class="r"><code># Add variable binary &#39;death&#39; (1=death from melanoma, 0=otherwise) from &#39;status&#39;
+tumor&lt;-tumor%&gt;%mutate(death=ifelse(status==1,1,0))
+# Run logistics regression on &#39;death&#39; from &#39;ulceration&#39; and &#39;sex&#39;
+fit2&lt;-glm(death~ulcer+sex, data=tumor, family=&#39;binomial&#39;)
+summary(fit2)</code></pre>
+<pre><code>##
+## Call:
+## glm(formula = death ~ ulcer + sex, family = &quot;binomial&quot;,
+data = tumor)
+##
+## Deviance Residuals:
+## Min 1Q Median 3Q Max
+## -1.2133 -0.6363 -0.5034 1.1420 2.0633
+##
+## Coefficients:
+## Estimate Std. Error z value Pr(&gt;|z|)
+## (Intercept) -2.0018 0.3015 -6.640 3.14e-11 ***
+## ulcer 1.5783 0.3459 4.562 5.06e-06 ***
+## sex 0.5074 0.3380 1.501 0.133
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## (Dispersion parameter for binomial family taken to be 1)
+##
+## Null deviance: 242.35 on 204 degrees of freedom
+## Residual deviance: 214.59 on 202 degrees of freedom
+## AIC: 220.59
+##
+## Number of Fisher Scoring iterations: 4</code></pre>
+<pre class="r"><code>exp(coef(fit2))</code></pre>
+<pre><code>## (Intercept)       ulcer         sex 
+##   0.1350953   4.8469087   1.6609999</code></pre>
+<div id="coefficient-estimates-1" class="section level4">
+<h4>Coefficient Estimates:</h4>
+<ul>
+<li>Intercept: The predicted odds of death from melanoma (by 1977) is 13.50953% if the patient is female and does not develop ulceration.</li>
+<li>ulcer: controlling for sex, having ulceration multiplies odds by a factor of 4.8469087.</li>
+<li>sex: controlling for ulceration, being a male multiplies odds of death by a factor of 1.6609999.</li>
+</ul>
+</div>
+<div id="confusion-matrix" class="section level4">
+<h4>Confusion Matrix</h4>
+<pre class="r"><code># Generate proababilities for original observations and save as &#39;prob&#39;
+prob&lt;-predict(fit2, type=&#39;response&#39;)
+# Confusion matrix
+table(predict=as.numeric(prob&gt;.5),truth=tumor$death)%&gt;%addmargins</code></pre>
+<pre><code>##        truth
+## predict   0   1 Sum
+##     0   126  36 162
+##     1    22  21  43
+##     Sum 148  57 205</code></pre>
+<p><em>Via the confusion matrix, TPR=21/57=0.368421, TNR=126/148=.851351, PPV=21/43=.48837.</em></p>
+</div>
+<div id="classification-diagnostics" class="section level4">
+<h4>Classification Diagnostics</h4>
+<pre class="r"><code># Define function for classification diagnostics
+class_diag &lt;- function(probs,truth){ 
+  #CONFUSION MATRIX: CALCULATE ACCURACY, TPR, TNR, PPV 
+  if(is.character(truth)==TRUE) truth&lt;-as.factor(truth) 
+  if(is.numeric(truth)==FALSE &amp; is.logical(truth)==FALSE) truth&lt;-as.numeric(truth)-1 
+  tab&lt;-table(factor(probs&gt;.5,levels=c(&quot;FALSE&quot;,&quot;TRUE&quot;)),factor(truth, levels=c(0,1))) 
+  acc=sum(diag(tab))/sum(tab) 
+  sens=tab[2,2]/colSums(tab)[2] 
+  spec=tab[1,1]/colSums(tab)[1] 
+  ppv=tab[2,2]/rowSums(tab)[2] 
+  
+#CALCULATE EXACT AUC 
+  ord&lt;-order(probs, decreasing=TRUE) 
+  probs &lt;- probs[ord]; truth &lt;- truth[ord] 
+  TPR=cumsum(truth)/max(1,sum(truth))  
+  FPR=cumsum(!truth)/max(1,sum(!truth)) 
+  dup &lt;-c(probs[-1]&gt;=probs[-length(probs)], FALSE) 
+  TPR &lt;-c(0,TPR[!dup],1); FPR&lt;-c(0,FPR[!dup],1) 
+  n &lt;- length(TPR) 
+  auc &lt;- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n])) 
+  data.frame(acc,sens,spec,ppv,auc) 
+}
+
+# For our model:
+class_diag(prob,tumor$death)</code></pre>
+<pre><code>##         acc      sens      spec       ppv       auc
+## 1 0.7170732 0.3684211 0.8513514 0.4883721 0.7220247</code></pre>
+<p><em>As shown, for the logistic regression model, accuracy is .7170732, sensitivity (TPR) is .3684211, specificity (TNR) is .8513514, precision (PPV) is .4883721, and AUC is 7220247. Here, TPR and PPV is relatively weak, so the model’s ability to predict death from melanoma if the patient really died from the disease and those who are classified as likely to die who really will, is relatively weak. On the other hand, accuracy and specificity are relatively stronger. These results are consistent with those from the confusion matrix. Most importantly, the AUC, which quantifies the overall predicting power of the model, shows that the model is predicting ok overall at ~.7220. These results are consistent with those from the confusion matrix.</em></p>
+</div>
+<div id="density-plot" class="section level4">
+<h4>Density Plot</h4>
+<p>Below shows the distribution of predicted logodds colored and group by whether the patient dies from the tumor via a density plot.</p>
+<pre class="r"><code>logit&lt;-predict(fit2,type=&#39;link&#39;)
+tumor %&gt;% mutate(death=as.factor(death)) %&gt;% ggplot(aes(logit,color=death,fill=death))+geom_density()+xlab(&quot;predictor (log odds)&quot;)</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-15-1.png" width="768" style="display: block; margin: auto;" /></p>
+</div>
+<div id="roc-curve-auc" class="section level4">
+<h4>ROC Curve &amp; AUC</h4>
+<p>To visualize the diagnostic ability of “death” as a binary classifier system as its distrimination threshold varies, we create the ROC plot and calculate the AUC.</p>
+<pre class="r"><code># ROC plot
+library(plotROC)
+ROCplot&lt;-ggplot(tumor)+geom_roc(aes(d=death,m=prob,n.cuts=0))
+ROCplot</code></pre>
+<p><img src="../../project/project2_files/figure-html/unnamed-chunk-16-1.png" width="768" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># AUC
+calc_auc(ROCplot)</code></pre>
+<pre><code>##   PANEL group       AUC
+## 1     1    -1 0.7220247</code></pre>
+<p><em>As shown, AUC=.7220247, which is a fair score, meaning that there is ~72.20% chance that a randomly selected patient who died from melanoma has a higher predicted probability than a randomly selected patient who did not die or die of melanoma.</em></p>
+</div>
+</div>
+<div id="v-what-best-predicts-survival-condition" class="section level3">
+<h3>V: What Best Predicts Survival Condition?</h3>
+<div id="logistic-regression-model" class="section level4">
+<h4>Logistic Regression Model</h4>
+<p>We first perform a logistics regression model on patient’s survival status of all other variables of interest. In this case I’ve removed variables X1, which numbers the patient; ‘status’, the non-binary version of the response variable of interest; ‘time’, which is irrelevant since, of course, the patients who live longer days will be alive by the end of the study.</p>
+<pre class="r"><code># Create new dataset with only desirable variables
+tumor_dat &lt;- tumor%&gt;%select(-X1)%&gt;%select(-status)%&gt;%select(-thickness_c)%&gt;%select(-time)
+# Run logistic regression on &#39;death&#39; over all other variables
+model&lt;-glm(death~.,data=tumor_dat,family=&#39;binomial&#39;)
+summary(model)</code></pre>
+<pre><code>##
+## Call:
+## glm(formula = death ~ ., family = &quot;binomial&quot;, data =
+tumor_dat)
+##
+## Deviance Residuals:
+## Min 1Q Median 3Q Max
+## -1.7609 -0.7545 -0.4454 0.9008 2.3316
+##
+## Coefficients:
+## Estimate Std. Error z value Pr(&gt;|z|)
+## (Intercept) 400.72733 143.11055 2.800 0.005108 **
+## sex 0.46677 0.35431 1.317 0.187704
+## age 0.01195 0.01109 1.078 0.281175
+## year -0.20489 0.07276 -2.816 0.004866 **
+## thickness 0.08660 0.06091 1.422 0.155074
+## ulcer 1.41849 0.38162 3.717 0.000202 ***
+## ---
+## Signif. codes: 0 &#39;***&#39; 0.001 &#39;**&#39; 0.01 &#39;*&#39; 0.05 &#39;.&#39; 0.1
+&#39; &#39; 1
+##
+## (Dispersion parameter for binomial family taken to be 1)
+##
+## Null deviance: 242.35 on 204 degrees of freedom
+## Residual deviance: 202.01 on 199 degrees of freedom
+## AIC: 214.01
+##
+## Number of Fisher Scoring iterations: 4</code></pre>
+<pre class="r"><code># Classification diagnostics
+probs&lt;-predict(model,type=&#39;response&#39;) # save probabilities
+class_diag(probs,tumor_dat$death)</code></pre>
+<pre><code>##         acc      sens      spec       ppv       auc
+## 1 0.7463415 0.3684211 0.8918919 0.5675676 0.7769085</code></pre>
+<p><em>As shown, accuracy~.7463, which means that there’s ~74.63% chance that the model predicts correctly; sensitivity(TPR)~.3684, which means that the model predicts actual death from the tumor ~36.84% of the time if the patient actually dies; specificity(TNR)~.8918, so the model predicts correctly for patients who did not die of the tumor ~89.18% of the time; and precision(PPV)~.5676, so the proportion of patients classified died who really did is ~56.76%. Since AUC=0.7769085&gt;.7, the overall predictive power of the model is fair.</em></p>
+</div>
+<div id="fold-cv" class="section level4">
+<h4>10-Fold CV</h4>
+<p>To test the model’s ability to make predictins on new data not used for estimation, we perform a 10-fold CV.</p>
+<pre class="r"><code># Perform 10-fold CV
+k=10
+data &lt;- tumor_dat %&gt;% sample_frac #put rows of dataset in random order 
+folds &lt;- ntile(1:nrow(data),n=10) #create fold labels
+diags&lt;-NULL 
+for(i in 1:k){
+  train &lt;- data[folds!=i,] #create training set (all but fold i) 
+  test &lt;- data[folds==i,] #create test set (just fold i)
+  truth &lt;- test$death #save truth labels from fold i
+  fit &lt;- glm(death~(.), data=train, family=&quot;binomial&quot;) 
+  probs &lt;- predict(fit, newdata=test, type=&quot;response&quot;)
+  diags&lt;-rbind(diags,class_diag(probs,truth)) 
+}
+summarize_all(diags,mean)</code></pre>
+<pre><code>##        acc      sens      spec       ppv       auc
+## 1 0.727619 0.3737302 0.8859559 0.5878571 0.7718635</code></pre>
+<p><em>The classification diagnostics for the 10-fold CV is shown as above. AUC in this case is ~.7411, which decreased slightly from ~.7769 from the in-sample metrics. This may have showed some signs of overfitting, but not significant; which indicates that the model is pretty good at making predictions on new data that were not used for estimation.</em></p>
+</div>
+<div id="lasso-regression" class="section level4">
+<h4>LASSO Regression</h4>
+<p>To select the best predictors for predicting survival condition, we perform LASSO regression to find out.</p>
+<pre class="r"><code>library(glmnet)
+y&lt;-as.matrix(tumor_dat$death) #grab response 
+x&lt;-model.matrix(death~.,data=tumor_dat)[,-1] #grab predictors
+cv&lt;-cv.glmnet(x,y,family=&quot;binomial&quot;) 
+lasso&lt;-glmnet(x,y,family=&quot;binomial&quot;,lambda=cv$lambda.1se) 
+coef(lasso)</code></pre>
+<pre><code>## 6 x 1 sparse Matrix of class &quot;dgCMatrix&quot;
+##                      s0
+## (Intercept) -1.25623224
+## sex          .         
+## age          .         
+## year         .         
+## thickness    0.01493987
+## ulcer        0.54591255</code></pre>
+<p><em>As shown, the best predictors for survival condition relative to the tumor is survival the year of the operation and ulceration status.</em></p>
+</div>
+<div id="fold-cv-on-selected-variables" class="section level4">
+<h4>10-Fold CV on Selected Variables</h4>
+<p>Now we perform a 10-fold CV on only the selected variables.</p>
+<pre class="r"><code>k=10
+data &lt;- tumor_dat %&gt;% sample_frac #put rows of dataset in random order 
+folds &lt;- ntile(1:nrow(data),n=10) #create fold labels
+diags&lt;-NULL 
+for(i in 1:k){
+  train &lt;- data[folds!=i,] #create training set (all but fold i) 
+  test &lt;- data[folds==i,] #create test set (just fold i)
+  truth &lt;- test$death #save truth labels from fold i
+  fit &lt;- glm(death~year+ulcer, data=train, family=&quot;binomial&quot;)
+  probs &lt;- predict(fit, newdata=test, type=&quot;response&quot;)
+  diags&lt;-rbind(diags,class_diag(probs,truth))
+} 
+diags%&gt;%summarize_all(mean)</code></pre>
+<pre><code>##         acc      sens      spec       ppv       auc
+## 1 0.7164286 0.3016378 0.8839831 0.5316667 0.7347594</code></pre>
+<p><em>As shown, AUC for 10-fold CV for the model with only the selected variables is ~.7527, which fairs a bit better than the previous one with all variables (AUC~.74.11). As such, this model might be the best at predicting survival condition compared to the others listed.</em></p>
+</div>
 </div>
 
             

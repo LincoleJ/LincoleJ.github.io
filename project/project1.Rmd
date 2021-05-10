@@ -1,8 +1,166 @@
 ---
-title: "Project 1"
-author: "Me"
-date: "2020-12-01"
-output: html_document
+title: "Project 1: The 2008 & 2016 Presidential Election"
+author: "Lingke Jiang (lj8826)"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
 ---
 
-## Test Project 1
+```{r global_options, include=FALSE}
+#DO NOT EDIT THIS CHUNK OR ANYTHING ABOVE IT!
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F, tidy=T, tidy.opts=list(width.cutoff=50), R.options=list(max.print=100,dplyr.print_max=100))
+```
+
+## Project 1
+
+### Part 0: Introduction
+This project examines the U.S. presidential election cycles of 2008 and 2016. The two raw datasets describe state-by-state information about the two election cycles respectively: with each row representing a state, it contains information about its per capital income as of the year before the election year (in $, named "Income"), percentage of adults with at least a high school education (named "HS"), Difference in % Democrat and % Republican according to pre-election Gallup survey (named Dem.Rep), and the candidate elected by the specific state (named "ObamaWin" and "TrumpWin", respectively, in 2008 and 2016). The datasets are acquired via public information on a list of R datasets from common packages <https://vincentarelbundock.github.io/Rdatasets/datasets.html>.
+
+Potential associations I expect to find include a larger difference in %Dem and %GOP of the voting block of each (considering the growing polarized political environment during the Obama years). In addition, I would hypothesize a clear relationship between level of education and political inclination, and a similar but perhaps weaker relationship between per capita income and political inclination.
+
+### Part I: The Dataset
+Acquiring and reading the raw datasets.
+```{R}
+library(tidyverse)
+library(ggplot2)
+election_08 <- read_csv("https://vincentarelbundock.github.io/Rdatasets/csv/Stat2Data/Election08.csv")
+election_16 <- read_csv("https://vincentarelbundock.github.io/Rdatasets/csv/Stat2Data/Election16.csv")
+```
+
+### Part II: Join & Tidy
+
+```{R}
+# Delete respective redundant columns for each dataset: for both datasets delete X1 (dummy variable), Abr (abbreviation for states); for dataset of election_16 delete also the column Adv (percent of population with advanced degrees). Rename the column "TrumpWin"/"ObamaWin" as "Winner" for consistency.
+Election_16 <- election_16 %>% select(-Adv) %>% select(-X1) %>% select(-Abr) %>% rename(Winner=TrumpWin)
+Election_08 <- election_08 %>% select(-X1) %>% select(-Abr) %>% rename(Winner=ObamaWin) 
+
+# Left-join the two datasets; omit all rows with NAs.
+wide_dat <- left_join(Election_08, Election_16, by="State", suffix=c("_2008","_2016")) %>% na.omit()
+```
+
+```{R}
+# Tidy. Mix the 10 columns into 2 via by pivoting longer. Spilt values like Income_2008 into two columns, one for type, the other for year. Finally, pivot wider s.t. each state in each election cycle constitutes an observation/row.
+Election <- wide_dat %>% pivot_longer(contains("_")) %>% separate(name, into=c("type","year"), sep="_") %>% pivot_wider(names_from="type",values_from="value")
+glimpse(Election)
+```
+*I chose this join since I need to preserve all rows the 2008 dataset [which incidently has 51 observations] and add rows with matches from the 2016 dataset. There is only one observation on the joining variable in either dataset. In this case, the only row omitted was the observation of DC, for which there is data for 2008 but none for 2016. This is potentially a problem in that it eliminates the considerations for DC altogehter, which, although not yet an official U.S. state, is similar to one when it comes to the electoral college. This action joins the two datasets by state, therefore each row is an observation of a particular state in either election with pertinent data like median income, education level, and the elected candidate. The final dataset has two categorical variables [i.e., election cycle and the president eleccted], and three four numeric variables [i.e., per capita income, percent high school grads, percent college grads, Dem-GOP lean in pre-election gallup poll].*
+
+
+### Part III: Summary Statistics
+
+#### Rewriting a Categorical Variable
+```{R}
+# Create a new column "Elected" to make clear the winner each election cycle. Update the dataset to include the new column.
+Election <- Election %>% mutate(Elected = case_when(year=="2008"&Winner=="0"~"Romney", year=="2008"&Winner=="1"~"Obama", year=="2016"&Winner=="0"~"Hillary", year=="2016"&Winner=="1"~"Trump"))
+Election %>% glimpse()
+```
+
+#### Which state that elected Trump has the highest per capita income?
+```{R}
+Election %>% filter(Elected=="Trump") %>% arrange(desc(Income)) %>% glimpse()
+```
+*As shown, Alaska is the wealthiest state that elected Trump in 2016.*
+
+#### Summary statistics for each of the three variables: mean, standard deviation, min, max, mid-50% range.
+```{R}
+# Create the summarized statistics dataset
+wide_dat_1 <- Election %>% summarize(mean_income=mean(Income), sd_income=sd(Income), min_income=min(Income), max_income=max(Income), mid50range_income=quantile(Income,0.75)-quantile(Income,0.25), mean_hs=mean(HS), sd_hs=sd(HS), min_hs=min(HS), max_hs=max(HS), mid50range_hs=quantile(HS,0.75)-quantile(HS,0.25), mean_hs=mean(HS), sd_hs=sd(HS), min_hs=min(HS), max_hs=max(HS), mid50range_hs=quantile(HS,0.75)-quantile(HS,0.25), mean_ba=mean(BA), sd_ba=sd(BA), min_ba=min(BA), max_ba=max(BA), mid50range_ba=quantile(BA,0.75)-quantile(BA,0.25), mean_lean=mean(Dem.Rep), sd_lean=sd(Dem.Rep), min_lean=min(Dem.Rep), max_lean=max(Dem.Rep), mid50range_lean=quantile(Dem.Rep,0.75)-quantile(Dem.Rep,0.25)) 
+
+# Tidy.
+summary_stats <- wide_dat_1 %>% pivot_longer(contains("_")) %>% separate(name, into=c("statistic", "type")) %>% pivot_wider(names_from="type",values_from="value")
+summary_stats
+```
+*The mean, standard deviation, min, max, and the mid-50% range of each numeric variable are shown above.*
+
+
+#### Summmary statistics (mean, sd) after grouping by "Elected" and "year"
+```{R}
+# Summary statistics (mean, sd) after grouping by "Elected" and "year".
+wide_dat_2 <- Election %>% group_by(year, Elected) %>% summarize(mean_income=mean(Income), sd_income=sd(Income), mean_hs=mean(HS), sd_hs=sd(HS),mean_hs=mean(HS), sd_hs=sd(HS), mean_ba=mean(BA), sd_ba=sd(BA), mean_lean=mean(Dem.Rep), sd_lean=sd(Dem.Rep))
+
+# Tidy the grouped summary statistics.
+grouped_summary_stats <- wide_dat_2 %>% pivot_longer(contains("_")) %>% separate(name, into=c("statistic", "type")) %>% pivot_wider(names_from="type",values_from="value")
+grouped_summary_stats
+```
+*As expected, the voting block for Democratic candidates tend to have higher per capita income, percent high school and college education as compared to that of Republican candidates in each election cycle.*
+
+#### A correlation matrix for all numerical variables.
+```{R}
+# Create a correlation matrix for all numeric variables
+cormat <- Election %>% select(c(3:6)) %>% cor(use="pair")
+cormat
+```
+*As shown, there is a relatively large, positive correlation between percentage high school education and per capita income and an even larger correlation between percentage college education and per capita income. Additionally, a bachelor degree seems to be the finest predictor of the overall level of political polarization, as it has the greatest magnitude of correlation coefficient with Dem.Rep as compared to HS or BA.*
+
+
+### Part IV: Visualization
+
+#### A correlation heat map for numeric variables.
+```{R}
+cormat %>% as.data.frame %>% rownames_to_column %>% pivot_longer(-1) %>% ggplot(aes(rowname, name, fill=value))+geom_tile() + geom_text(aes(label=round(value,2))) + xlab("") + ylab("") + coord_fixed() + scale_fill_gradient2(low="red",mid="white",high="blue")
+```
+
+#### A scatterplot
+```{R}
+# First, change the values of percent high school education, percent bachelor education, percentage difference in Dem/Rep lean s.t. they are actually percentages.
+Election1 <- Election %>% mutate(HS=HS*0.01) %>% mutate(BA=BA*0.01) %>% mutate(Dem.Rep=Dem.Rep*0.01)
+
+# Plot.
+ggplot(Election1, aes(HS, Income, color=Elected), stat="summary") + geom_point(size=3) + xlab("Percent High School Education") + ylab("Per Capita Income ($)") + ggtitle("High School Education, Income, and the Elected Candidate") + scale_x_continuous(labels=scales::percent, breaks=seq(0,1,0.02)) + scale_color_manual(values=c("#00CC00", "#0066CC", "#CC0000", "#CC00FF")) + theme(axis.text.x=element_text(angle=60,hjust=1)) 
+```
+*As shown, there is a conspicuous positive, linear relationship between percent high school education of a population and the per capita income of that population. Furthermore, from visual interpretation, it seems like the Romney voters have the overall lowest percent high school education and per capita income, and Hillary voters tends to have overall highest percent high school education and highest per capita income. Furthermore, there seems to be an overall slight increase in percent high school education and per capita income for U.S. population in the 2016 election cycle compared to 2008, as the two metrics are higher in Hillary and Trump voters compared to Romney and Obama voters.*
+
+#### A Violin Plot
+```{R}
+# Firstly, a new color package.
+# install.packages("wesanderson")
+library(wesanderson)
+
+# Plot.
+ggplot(Election1, aes(x=BA, y=Dem.Rep, fill=Elected)) + geom_violin(trim=F) + ggtitle("Political Inclination, Bachelor Degree, and Elected Leader") + xlab("Percent Bachelor Degree") + ylab("Dem GOP Inclination") + scale_y_continuous(labels=scales::percent, breaks=seq(-1,1,0.05)) + scale_x_continuous(labels=scales::percent, breaks=seq(0,1,0.02)) + scale_fill_manual(values = wes_palette("GrandBudapest2", n=4)) + geom_boxplot(width=0.1) + theme_minimal() + theme(legend.position="bottom")
+```
+*As shown by the violin plot, it is fair to conclude that Trump/Romney voters are less likely than Hillary/Obama voters to have a bachelor degree, with Romney voters least likely to have a bachelor degree and Hillary voters most likely to possess one. Interestingly, if the voting population is representative of the general population of the American public, it seems like the increasing political polarization that had occurred from the 2008 election cycle to 2016 was solely evident on the GOP side. While the range/dispersion of each voting block with respect to Dem/Rep inclination seems similar, voters who voted for Trump are inclined to be more Republican in 2016 than the voters that voted for Romney in 2016; and the voters who voted for Hillary in 2016 are less inclined to be Democratic than voters who voted for Obama in 2008. This could perhaps be explained by the polarizing nature of Trump's electoral strategy, or the increasingly polarizing effect of major Conservative movements that occurred during the Obama years on the GOP electorate.*
+
+### Part V: Clustering
+
+#### Finding the proper k-value
+```{R}
+library(cluster)
+
+# Consider only the numerical variables
+clust_dat <- Election %>% select(-1:-2, -7:-8)
+
+# Finding the proper number of clusters via silhouette width
+sil_width <- vector() #Empty vector
+for(i in 2:10){
+  kms <- kmeans(clust_dat,centers=i) # compute k-means solutions
+  sil <- silhouette(kms$cluster,dist(clust_dat)) # get sil widths
+  sil_width[i] <- mean(sil[,3]) 
+}
+ggplot()+geom_line(aes(x=1:10),y=sil_width)+scale_x_continuous(name="k",breaks=1:10)
+```
+*I choose there to be 3 clusters since k=3 has the greatest silhouette width, and thus at this value clusters are more cohesive and more separated.*
+
+#### The k-means Clustering
+```{R}
+# Scale the cluster, then use kmeans() to generate the clustering
+kmeans1 <- clust_dat %>% scale %>% kmeans(3)
+kmeans1
+```
+*As shown, the sums of squares within each cluster are 40.75630, 87.19083, and 76.48395 for clusters 1, 2, and 3 respectively. Furthermore, the value of sums of squares within clusters/total sums of squares is about 48.4%, meaning that these clusters are not especially compact adn that members within the same group are not very similar.*
+
+#### The Plot
+```{R}
+# Save cluster assignment as a column in the dataset
+kmeansclust <- clust_dat %>% mutate(cluster=as.factor(kmeans1$cluster))
+
+# Make the plot of data colored by final assignment w.r.t. income and percent high school education
+kmeansclust %>% ggplot(aes(Income, HS, color=cluster)) + geom_point()
+
+# Make the plot of data colored by final assignment w.r.t. percent bachelor education and Dem/Rep difference
+kmeansclust %>% ggplot(aes(BA, Dem.Rep, color=cluster)) + geom_point()
+```
+*The visual confirms the previous conclusions: the clusters are not especially well-grouped and compact.*

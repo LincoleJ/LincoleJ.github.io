@@ -6,25 +6,7 @@
     <description>Recent content on Lincole Jiang</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Tue, 01 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
-    <item>
-      <title>Project 1</title>
-      <link>/project/project1/</link>
-      <pubDate>Tue, 01 Dec 2020 00:00:00 +0000</pubDate>
-      
-      <guid>/project/project1/</guid>
-      <description> Test Project 1  </description>
-    </item>
-    
-    <item>
-      <title>Project 2</title>
-      <link>/project/project2/</link>
-      <pubDate>Tue, 01 Dec 2020 00:00:00 +0000</pubDate>
-      
-      <guid>/project/project2/</guid>
-      <description> Test Project 2  </description>
-    </item>
-    
+    <lastBuildDate>Thu, 23 Jul 2015 21:13:14 -0500</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>Hello R Markdown</title>
       <link>/post/2015/07/23/hello-r-markdown/</link>
@@ -34,6 +16,24 @@
       <description>R Markdown This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see http://rmarkdown.rstudio.com.
 You can embed an R code chunk like this:
 summary(cars) ## speed dist ## Min. : 4.0 Min. : 2.00 ## 1st Qu.:12.0 1st Qu.: 26.00 ## Median :15.0 Median : 36.00 ## Mean :15.4 Mean : 42.98 ## 3rd Qu.</description>
+    </item>
+    
+    <item>
+      <title>Project 1: The 2008 &amp; 2016 Presidential Election</title>
+      <link>/project/project1/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project1/</guid>
+      <description>Project 1 Part 0: Introduction This project examines the U.S. presidential election cycles of 2008 and 2016. The two raw datasets describe state-by-state information about the two election cycles respectively: with each row representing a state, it contains information about its per capital income as of the year before the election year (in $, named “Income”), percentage of adults with at least a high school education (named “HS”), Difference in % Democrat and % Republican according to pre-election Gallup survey (named Dem.</description>
+    </item>
+    
+    <item>
+      <title>Project 2: Predicting Post-Operation Survival Condition for Melanoma Patients</title>
+      <link>/project/project2/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project2/</guid>
+      <description>0: Introduction &amp;amp; The Dataset Develops in melanocytes–the skin cells that produces melanin–melanoma is the most severe type of skin cancer that kills will kill about 7180 patients in the U.S. in 2021, per American Cancer Society estimates. This project examines the post-ops and recovery situation of patients with malignant melanoma using data from 205 of such patients who received complete tumor removal surgery [together with 2.5 cm of surrounding skin] at the Department of Plastic Surgery in University Hospital of Odense, Denmark from 1962 to 1977.</description>
     </item>
     
     <item>

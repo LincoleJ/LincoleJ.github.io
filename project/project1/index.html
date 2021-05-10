@@ -7,7 +7,7 @@
     <meta name="author" content="Lincole Jiang" />
     
     <link rel="shortcut icon" type="image/x-icon" href="../../img/favicon.ico">
-    <title>Project 1</title>
+    <title>Project 1: The 2008 &amp; 2016 Presidential Election</title>
     <meta name="generator" content="Hugo 0.83.1" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="../../css/main.css" />
@@ -54,13 +54,13 @@
       <div class="container">
         <div class="blog-post">
           <h3>
-            <strong><a href="../../project/project1/">Project 1</a></strong>
+            <strong><a href="../../project/project1/">Project 1: The 2008 &amp; 2016 Presidential Election</a></strong>
           </h3>
         </div>
  
 <div class="blog-title">
           <h4>
-         December 1, 2020 
+         January 1, 0001 
             &nbsp;&nbsp;
             
           </h4>
@@ -72,8 +72,298 @@
               
 
 
-<div id="test-project-1" class="section level2">
-<h2>Test Project 1</h2>
+<div id="project-1" class="section level2">
+<h2>Project 1</h2>
+<div id="part-0-introduction" class="section level3">
+<h3>Part 0: Introduction</h3>
+<p>This project examines the U.S. presidential election cycles of 2008 and 2016. The two raw datasets describe state-by-state information about the two election cycles respectively: with each row representing a state, it contains information about its per capital income as of the year before the election year (in $, named “Income”), percentage of adults with at least a high school education (named “HS”), Difference in % Democrat and % Republican according to pre-election Gallup survey (named Dem.Rep), and the candidate elected by the specific state (named “ObamaWin” and “TrumpWin”, respectively, in 2008 and 2016). The datasets are acquired via public information on a list of R datasets from common packages <a href="https://vincentarelbundock.github.io/Rdatasets/datasets.html" class="uri">https://vincentarelbundock.github.io/Rdatasets/datasets.html</a>.</p>
+<p>Potential associations I expect to find include a larger difference in %Dem and %GOP of the voting block of each (considering the growing polarized political environment during the Obama years). In addition, I would hypothesize a clear relationship between level of education and political inclination, and a similar but perhaps weaker relationship between per capita income and political inclination.</p>
+</div>
+<div id="part-i-the-dataset" class="section level3">
+<h3>Part I: The Dataset</h3>
+<p>Acquiring and reading the raw datasets.</p>
+<pre class="r"><code>library(tidyverse)
+library(ggplot2)
+election_08 &lt;- read_csv(&quot;https://vincentarelbundock.github.io/Rdatasets/csv/Stat2Data/Election08.csv&quot;)
+election_16 &lt;- read_csv(&quot;https://vincentarelbundock.github.io/Rdatasets/csv/Stat2Data/Election16.csv&quot;)</code></pre>
+</div>
+<div id="part-ii-join-tidy" class="section level3">
+<h3>Part II: Join &amp; Tidy</h3>
+<pre class="r"><code># Delete respective redundant columns for each
+# dataset: for both datasets delete X1 (dummy
+# variable), Abr (abbreviation for states); for
+# dataset of election_16 delete also the column Adv
+# (percent of population with advanced degrees).
+# Rename the column &#39;TrumpWin&#39;/&#39;ObamaWin&#39; as
+# &#39;Winner&#39; for consistency.
+Election_16 &lt;- election_16 %&gt;% select(-Adv) %&gt;% select(-X1) %&gt;% 
+    select(-Abr) %&gt;% rename(Winner = TrumpWin)
+Election_08 &lt;- election_08 %&gt;% select(-X1) %&gt;% select(-Abr) %&gt;% 
+    rename(Winner = ObamaWin)
+
+# Left-join the two datasets; omit all rows with
+# NAs.
+wide_dat &lt;- left_join(Election_08, Election_16, by = &quot;State&quot;, 
+    suffix = c(&quot;_2008&quot;, &quot;_2016&quot;)) %&gt;% na.omit()</code></pre>
+<pre class="r"><code># Tidy. Mix the 10 columns into 2 via by pivoting
+# longer. Spilt values like Income_2008 into two
+# columns, one for type, the other for year.
+# Finally, pivot wider s.t. each state in each
+# election cycle constitutes an observation/row.
+Election &lt;- wide_dat %&gt;% pivot_longer(contains(&quot;_&quot;)) %&gt;% 
+    separate(name, into = c(&quot;type&quot;, &quot;year&quot;), sep = &quot;_&quot;) %&gt;% 
+    pivot_wider(names_from = &quot;type&quot;, values_from = &quot;value&quot;)
+glimpse(Election)</code></pre>
+<pre><code>## Rows: 100
+## Columns: 7
+## $ State   &lt;chr&gt; &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alaska&quot;, &quot;Alaska&quot;, &quot;Arizona&quot;, &quot;Arizona…
+## $ year    &lt;chr&gt; &quot;2008&quot;, &quot;2016&quot;, &quot;2008&quot;, &quot;2016&quot;, &quot;2008&quot;, &quot;2016&quot;, &quot;2008&quot;, &quot;2016…
+## $ Income  &lt;dbl&gt; 32404, 43623, 40352, 72515, 33029, 50255, 30060, 41371, 41571…
+## $ HS      &lt;dbl&gt; 80.4, 84.3, 90.5, 92.1, 83.5, 86.0, 81.1, 84.8, 80.2, 81.8, 8…
+## $ BA      &lt;dbl&gt; 21.4, 23.5, 26.0, 28.0, 25.3, 27.5, 19.3, 21.1, 29.5, 31.4, 3…
+## $ Dem.Rep &lt;dbl&gt; -1, -17, -11, -17, 0, -1, 12, -7, 19, 16, 11, -1, 26, 11, 23,…
+## $ Winner  &lt;dbl&gt; 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1…</code></pre>
+<p><em>I chose this join since I need to preserve all rows the 2008 dataset [which incidently has 51 observations] and add rows with matches from the 2016 dataset. There is only one observation on the joining variable in either dataset. In this case, the only row omitted was the observation of DC, for which there is data for 2008 but none for 2016. This is potentially a problem in that it eliminates the considerations for DC altogehter, which, although not yet an official U.S. state, is similar to one when it comes to the electoral college. This action joins the two datasets by state, therefore each row is an observation of a particular state in either election with pertinent data like median income, education level, and the elected candidate. The final dataset has two categorical variables [i.e., election cycle and the president eleccted], and three four numeric variables [i.e., per capita income, percent high school grads, percent college grads, Dem-GOP lean in pre-election gallup poll].</em></p>
+</div>
+<div id="part-iii-summary-statistics" class="section level3">
+<h3>Part III: Summary Statistics</h3>
+<div id="rewriting-a-categorical-variable" class="section level4">
+<h4>Rewriting a Categorical Variable</h4>
+<pre class="r"><code># Create a new column &#39;Elected&#39; to make clear the
+# winner each election cycle. Update the dataset to
+# include the new column.
+Election &lt;- Election %&gt;% mutate(Elected = case_when(year == 
+    &quot;2008&quot; &amp; Winner == &quot;0&quot; ~ &quot;Romney&quot;, year == &quot;2008&quot; &amp; 
+    Winner == &quot;1&quot; ~ &quot;Obama&quot;, year == &quot;2016&quot; &amp; Winner == 
+    &quot;0&quot; ~ &quot;Hillary&quot;, year == &quot;2016&quot; &amp; Winner == &quot;1&quot; ~ 
+    &quot;Trump&quot;))
+Election %&gt;% glimpse()</code></pre>
+<pre><code>## Rows: 100
+## Columns: 8
+## $ State   &lt;chr&gt; &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alaska&quot;, &quot;Alaska&quot;, &quot;Arizona&quot;, &quot;Arizona…
+## $ year    &lt;chr&gt; &quot;2008&quot;, &quot;2016&quot;, &quot;2008&quot;, &quot;2016&quot;, &quot;2008&quot;, &quot;2016&quot;, &quot;2008&quot;, &quot;2016…
+## $ Income  &lt;dbl&gt; 32404, 43623, 40352, 72515, 33029, 50255, 30060, 41371, 41571…
+## $ HS      &lt;dbl&gt; 80.4, 84.3, 90.5, 92.1, 83.5, 86.0, 81.1, 84.8, 80.2, 81.8, 8…
+## $ BA      &lt;dbl&gt; 21.4, 23.5, 26.0, 28.0, 25.3, 27.5, 19.3, 21.1, 29.5, 31.4, 3…
+## $ Dem.Rep &lt;dbl&gt; -1, -17, -11, -17, 0, -1, 12, -7, 19, 16, 11, -1, 26, 11, 23,…
+## $ Winner  &lt;dbl&gt; 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 1…
+## $ Elected &lt;chr&gt; &quot;Romney&quot;, &quot;Trump&quot;, &quot;Romney&quot;, &quot;Trump&quot;, &quot;Romney&quot;, &quot;Trump&quot;, &quot;Rom…</code></pre>
+</div>
+<div id="which-state-that-elected-trump-has-the-highest-per-capita-income" class="section level4">
+<h4>Which state that elected Trump has the highest per capita income?</h4>
+<pre class="r"><code>Election %&gt;% filter(Elected == &quot;Trump&quot;) %&gt;% arrange(desc(Income)) %&gt;% 
+    glimpse()</code></pre>
+<pre><code>## Rows: 30
+## Columns: 8
+## $ State   &lt;chr&gt; &quot;Alaska&quot;, &quot;Utah&quot;, &quot;Wyoming&quot;, &quot;North Dakota&quot;, &quot;Pennsylvania&quot;, …
+## $ year    &lt;chr&gt; &quot;2016&quot;, &quot;2016&quot;, &quot;2016&quot;, &quot;2016&quot;, &quot;2016&quot;, &quot;2016&quot;, &quot;2016&quot;, &quot;2016…
+## $ Income  &lt;dbl&gt; 72515, 60727, 58840, 57181, 53599, 53357, 53207, 53183, 52997…
+## $ HS      &lt;dbl&gt; 92.1, 91.2, 92.3, 91.7, 89.2, 91.0, 81.9, 91.5, 90.7, 90.2, 9…
+## $ BA      &lt;dbl&gt; 28.0, 31.1, 25.7, 27.7, 28.6, 27.8, 27.6, 26.7, 29.3, 31.0, 2…
+## $ Dem.Rep &lt;dbl&gt; -17, -30, -32, -21, 3, -1, -6, -3, -9, -13, -16, -1, -4, 4, 0…
+## $ Winner  &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1…
+## $ Elected &lt;chr&gt; &quot;Trump&quot;, &quot;Trump&quot;, &quot;Trump&quot;, &quot;Trump&quot;, &quot;Trump&quot;, &quot;Trump&quot;, &quot;Trump&quot;…</code></pre>
+<p><em>As shown, Alaska is the wealthiest state that elected Trump in 2016.</em></p>
+</div>
+<div id="summary-statistics-for-each-of-the-three-variables-mean-standard-deviation-min-max-mid-50-range." class="section level4">
+<h4>Summary statistics for each of the three variables: mean, standard deviation, min, max, mid-50% range.</h4>
+<pre class="r"><code># Create the summarized statistics dataset
+wide_dat_1 &lt;- Election %&gt;% summarize(mean_income = mean(Income), 
+    sd_income = sd(Income), min_income = min(Income), 
+    max_income = max(Income), mid50range_income = quantile(Income, 
+        0.75) - quantile(Income, 0.25), mean_hs = mean(HS), 
+    sd_hs = sd(HS), min_hs = min(HS), max_hs = max(HS), 
+    mid50range_hs = quantile(HS, 0.75) - quantile(HS, 
+        0.25), mean_hs = mean(HS), sd_hs = sd(HS), 
+    min_hs = min(HS), max_hs = max(HS), mid50range_hs = quantile(HS, 
+        0.75) - quantile(HS, 0.25), mean_ba = mean(BA), 
+    sd_ba = sd(BA), min_ba = min(BA), max_ba = max(BA), 
+    mid50range_ba = quantile(BA, 0.75) - quantile(BA, 
+        0.25), mean_lean = mean(Dem.Rep), sd_lean = sd(Dem.Rep), 
+    min_lean = min(Dem.Rep), max_lean = max(Dem.Rep), 
+    mid50range_lean = quantile(Dem.Rep, 0.75) - quantile(Dem.Rep, 
+        0.25))
+
+# Tidy.
+summary_stats &lt;- wide_dat_1 %&gt;% pivot_longer(contains(&quot;_&quot;)) %&gt;% 
+    separate(name, into = c(&quot;statistic&quot;, &quot;type&quot;)) %&gt;% 
+    pivot_wider(names_from = &quot;type&quot;, values_from = &quot;value&quot;)
+summary_stats</code></pre>
+<pre><code>## # A tibble: 5 x 5
+##   statistic  income    hs    ba  lean
+##   &lt;chr&gt;       &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;
+## 1 mean       45742. 87.1  27.9    4.5
+## 2 sd         11353.  3.55  4.92  14.6
+## 3 min        28845  78.5  17.3  -32  
+## 4 max        74551  92.8  40.5   37  
+## 5 mid50range 17237.  5.02  6.35  20.2</code></pre>
+<p><em>The mean, standard deviation, min, max, and the mid-50% range of each numeric variable are shown above.</em></p>
+</div>
+<div id="summmary-statistics-mean-sd-after-grouping-by-elected-and-year" class="section level4">
+<h4>Summmary statistics (mean, sd) after grouping by “Elected” and “year”</h4>
+<pre class="r"><code># Summary statistics (mean, sd) after grouping by
+# &#39;Elected&#39; and &#39;year&#39;.
+wide_dat_2 &lt;- Election %&gt;% group_by(year, Elected) %&gt;% 
+    summarize(mean_income = mean(Income), sd_income = sd(Income), 
+        mean_hs = mean(HS), sd_hs = sd(HS), mean_hs = mean(HS), 
+        sd_hs = sd(HS), mean_ba = mean(BA), sd_ba = sd(BA), 
+        mean_lean = mean(Dem.Rep), sd_lean = sd(Dem.Rep))
+
+# Tidy the grouped summary statistics.
+grouped_summary_stats &lt;- wide_dat_2 %&gt;% pivot_longer(contains(&quot;_&quot;)) %&gt;% 
+    separate(name, into = c(&quot;statistic&quot;, &quot;type&quot;)) %&gt;% 
+    pivot_wider(names_from = &quot;type&quot;, values_from = &quot;value&quot;)
+grouped_summary_stats</code></pre>
+<pre><code>## # A tibble: 8 x 7
+## # Groups:   year [2]
+##   year  Elected statistic income    hs    ba   lean
+##   &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;
+## 1 2008  Obama   mean      39821. 86.9  29.0  19.4  
+## 2 2008  Obama   sd         5420.  2.74  4.39  8.08 
+## 3 2008  Romney  mean      33802. 84.9  23.8   0.409
+## 4 2008  Romney  sd         3462.  4.38  3.25 10.5  
+## 5 2016  Hillary mean      60931. 88.8  33.2   8.8  
+## 6 2016  Hillary sd         7988.  2.89  4.29  9.35 
+## 7 2016  Trump   mean      49899. 87.9  26.2  -9.3  
+## 8 2016  Trump   sd         6571.  3.21  2.95  9.65</code></pre>
+<p><em>As expected, the voting block for Democratic candidates tend to have higher per capita income, percent high school and college education as compared to that of Republican candidates in each election cycle.</em></p>
+</div>
+<div id="a-correlation-matrix-for-all-numerical-variables." class="section level4">
+<h4>A correlation matrix for all numerical variables.</h4>
+<pre class="r"><code># Create a correlation matrix for all numeric
+# variables
+cormat &lt;- Election %&gt;% select(c(3:6)) %&gt;% cor(use = &quot;pair&quot;)
+cormat</code></pre>
+<pre><code>##             Income         HS        BA    Dem.Rep
+## Income   1.0000000  0.4881619 0.6666373 -0.1296984
+## HS       0.4881619  1.0000000 0.5274676 -0.2150815
+## BA       0.6666373  0.5274676 1.0000000  0.2891222
+## Dem.Rep -0.1296984 -0.2150815 0.2891222  1.0000000</code></pre>
+<p><em>As shown, there is a relatively large, positive correlation between percentage high school education and per capita income and an even larger correlation between percentage college education and per capita income. Additionally, a bachelor degree seems to be the finest predictor of the overall level of political polarization, as it has the greatest magnitude of correlation coefficient with Dem.Rep as compared to HS or BA.</em></p>
+</div>
+</div>
+<div id="part-iv-visualization" class="section level3">
+<h3>Part IV: Visualization</h3>
+<div id="a-correlation-heat-map-for-numeric-variables." class="section level4">
+<h4>A correlation heat map for numeric variables.</h4>
+<pre class="r"><code>cormat %&gt;% as.data.frame %&gt;% rownames_to_column %&gt;% 
+    pivot_longer(-1) %&gt;% ggplot(aes(rowname, name, 
+    fill = value)) + geom_tile() + geom_text(aes(label = round(value, 
+    2))) + xlab(&quot;&quot;) + ylab(&quot;&quot;) + coord_fixed() + scale_fill_gradient2(low = &quot;red&quot;, 
+    mid = &quot;white&quot;, high = &quot;blue&quot;)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-9-1.png" width="672" style="display: block; margin: auto;" /></p>
+</div>
+<div id="a-scatterplot" class="section level4">
+<h4>A scatterplot</h4>
+<pre class="r"><code># First, change the values of percent high school
+# education, percent bachelor education, percentage
+# difference in Dem/Rep lean s.t. they are actually
+# percentages.
+Election1 &lt;- Election %&gt;% mutate(HS = HS * 0.01) %&gt;% 
+    mutate(BA = BA * 0.01) %&gt;% mutate(Dem.Rep = Dem.Rep * 
+    0.01)
+
+# Plot.
+ggplot(Election1, aes(HS, Income, color = Elected), 
+    stat = &quot;summary&quot;) + geom_point(size = 3) + xlab(&quot;Percent High School Education&quot;) + 
+    ylab(&quot;Per Capita Income ($)&quot;) + ggtitle(&quot;High School Education, Income, and the Elected Candidate&quot;) + 
+    scale_x_continuous(labels = scales::percent, breaks = seq(0, 
+        1, 0.02)) + scale_color_manual(values = c(&quot;#00CC00&quot;, 
+    &quot;#0066CC&quot;, &quot;#CC0000&quot;, &quot;#CC00FF&quot;)) + theme(axis.text.x = element_text(angle = 60, 
+    hjust = 1))</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-10-1.png" width="672" style="display: block; margin: auto;" />
+<em>As shown, there is a conspicuous positive, linear relationship between percent high school education of a population and the per capita income of that population. Furthermore, from visual interpretation, it seems like the Romney voters have the overall lowest percent high school education and per capita income, and Hillary voters tends to have overall highest percent high school education and highest per capita income. Furthermore, there seems to be an overall slight increase in percent high school education and per capita income for U.S. population in the 2016 election cycle compared to 2008, as the two metrics are higher in Hillary and Trump voters compared to Romney and Obama voters.</em></p>
+</div>
+<div id="a-violin-plot" class="section level4">
+<h4>A Violin Plot</h4>
+<pre class="r"><code># Firstly, a new color package.
+# install.packages(&#39;wesanderson&#39;)
+library(wesanderson)
+
+# Plot.
+ggplot(Election1, aes(x = BA, y = Dem.Rep, fill = Elected)) + 
+    geom_violin(trim = F) + ggtitle(&quot;Political Inclination, Bachelor Degree, and Elected Leader&quot;) + 
+    xlab(&quot;Percent Bachelor Degree&quot;) + ylab(&quot;Dem GOP Inclination&quot;) + 
+    scale_y_continuous(labels = scales::percent, breaks = seq(-1, 
+        1, 0.05)) + scale_x_continuous(labels = scales::percent, 
+    breaks = seq(0, 1, 0.02)) + scale_fill_manual(values = wes_palette(&quot;GrandBudapest2&quot;, 
+    n = 4)) + geom_boxplot(width = 0.1) + theme_minimal() + 
+    theme(legend.position = &quot;bottom&quot;)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-11-1.png" width="672" style="display: block; margin: auto;" />
+<em>As shown by the violin plot, it is fair to conclude that Trump/Romney voters are less likely than Hillary/Obama voters to have a bachelor degree, with Romney voters least likely to have a bachelor degree and Hillary voters most likely to possess one. Interestingly, if the voting population is representative of the general population of the American public, it seems like the increasing political polarization that had occurred from the 2008 election cycle to 2016 was solely evident on the GOP side. While the range/dispersion of each voting block with respect to Dem/Rep inclination seems similar, voters who voted for Trump are inclined to be more Republican in 2016 than the voters that voted for Romney in 2016; and the voters who voted for Hillary in 2016 are less inclined to be Democratic than voters who voted for Obama in 2008. This could perhaps be explained by the polarizing nature of Trump’s electoral strategy, or the increasingly polarizing effect of major Conservative movements that occurred during the Obama years on the GOP electorate.</em></p>
+</div>
+</div>
+<div id="part-v-clustering" class="section level3">
+<h3>Part V: Clustering</h3>
+<div id="finding-the-proper-k-value" class="section level4">
+<h4>Finding the proper k-value</h4>
+<pre class="r"><code>library(cluster)
+
+# Consider only the numerical variables
+clust_dat &lt;- Election %&gt;% select(-1:-2, -7:-8)
+
+# Finding the proper number of clusters via
+# silhouette width
+sil_width &lt;- vector()  #Empty vector
+for (i in 2:10) {
+    kms &lt;- kmeans(clust_dat, centers = i)  # compute k-means solutions
+    sil &lt;- silhouette(kms$cluster, dist(clust_dat))  # get sil widths
+    sil_width[i] &lt;- mean(sil[, 3])
+}
+ggplot() + geom_line(aes(x = 1:10), y = sil_width) + 
+    scale_x_continuous(name = &quot;k&quot;, breaks = 1:10)</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-12-1.png" width="672" style="display: block; margin: auto;" />
+<em>I choose there to be 3 clusters since k=3 has the greatest silhouette width, and thus at this value clusters are more cohesive and more separated.</em></p>
+</div>
+<div id="the-k-means-clustering" class="section level4">
+<h4>The k-means Clustering</h4>
+<pre class="r"><code># Scale the cluster, then use kmeans() to generate
+# the clustering
+kmeans1 &lt;- clust_dat %&gt;% scale %&gt;% kmeans(3)
+kmeans1</code></pre>
+<pre><code>## K-means clustering with 3 clusters of sizes 29, 34, 37
+## 
+## Cluster means:
+##       Income         HS         BA    Dem.Rep
+## 1  0.8292172  0.4677585  1.2350918  0.7213321
+## 2  0.1674889  0.5565624 -0.1875358 -0.9747394
+## 3 -0.8038357 -0.8780572 -0.7957147  0.3303380
+## 
+## Clustering vector:
+##   [1] 3 2 2 2 3 2 3 3 3 1 1 1 1 1 3 1 3 2 3 2 1 1 2 2 3 1 3 2 3 2 2 2 3 3 3 3 3
+##  [38] 2 1 1 1 1 3 2 1 1 3 3 3 2 2 2 2 2 3 2 1 1 1 1 3 3 1 1 3 2 2 2 3 2 3 2 3 1
+##  [75] 3 2 3 1 3 2 3 2 3 2 3 3 2 2 1 1 1 1 1 1 3 3 3 2 2 2
+## 
+## Within cluster sum of squares by cluster:
+## [1] 64.85030 55.35783 65.29490
+##  (between_SS / total_SS =  53.2 %)
+## 
+## Available components:
+## 
+## [1] &quot;cluster&quot;      &quot;centers&quot;      &quot;totss&quot;        &quot;withinss&quot;     &quot;tot.withinss&quot;
+## [6] &quot;betweenss&quot;    &quot;size&quot;         &quot;iter&quot;         &quot;ifault&quot;</code></pre>
+<p><em>As shown, the sums of squares within each cluster are 40.75630, 87.19083, and 76.48395 for clusters 1, 2, and 3 respectively. Furthermore, the value of sums of squares within clusters/total sums of squares is about 48.4%, meaning that these clusters are not especially compact adn that members within the same group are not very similar.</em></p>
+</div>
+<div id="the-plot" class="section level4">
+<h4>The Plot</h4>
+<pre class="r"><code># Save cluster assignment as a column in the
+# dataset
+kmeansclust &lt;- clust_dat %&gt;% mutate(cluster = as.factor(kmeans1$cluster))
+
+# Make the plot of data colored by final assignment
+# w.r.t. income and percent high school education
+kmeansclust %&gt;% ggplot(aes(Income, HS, color = cluster)) + 
+    geom_point()</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-14-1.png" width="672" style="display: block; margin: auto;" /></p>
+<pre class="r"><code># Make the plot of data colored by final assignment
+# w.r.t. percent bachelor education and Dem/Rep
+# difference
+kmeansclust %&gt;% ggplot(aes(BA, Dem.Rep, color = cluster)) + 
+    geom_point()</code></pre>
+<p><img src="../../project/project1_files/figure-html/unnamed-chunk-14-2.png" width="672" style="display: block; margin: auto;" />
+<em>The visual confirms the previous conclusions: the clusters are not especially well-grouped and compact.</em></p>
+</div>
+</div>
 </div>
 
             
